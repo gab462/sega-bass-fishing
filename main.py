@@ -5,6 +5,7 @@ import urllib
 from base import Base
 from randomize import Randomize
 from book_club import BookClub
+from remind import Remind
 
 
 def get_phrases(url):
@@ -42,6 +43,7 @@ def main():
     bot.add_cog(Base(bot))
     bot.add_cog(Randomize(bot, lambda: get_phrases(config['phrases'])))
     bot.add_cog(BookClub(bot))
+    bot.add_cog(Remind(bot))
 
     bot.run(config['token'])
 
