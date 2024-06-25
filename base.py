@@ -1,10 +1,15 @@
 import nextcord
 import nextcord.ext.commands
+import os.path
 
 
 class Base(nextcord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+        if not os.path.isfile('db.json'):
+            with open('db.json', 'w+') as f:
+                f.write(json.dumps({}))
 
 
     @nextcord.ext.commands.Cog.listener()

@@ -3,11 +3,18 @@ import nextcord.ext.commands
 import json
 import random
 import copy
+import json_db
 
 
 class BookClub(nextcord.ext.commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+        with json_db.connect('db.json') as db:
+            if 'chosen' not in db.keys():
+                db['chosen'] = []
+            if 'books' not in db.keys():
+                db['books'] = {}
 
 
     @nextcord.slash_command(description='Define books')
@@ -21,8 +28,8 @@ class BookClub(nextcord.ext.commands.Cog):
         for owner, book in pairs:
             mapping[owner].append(book)
 
-        with open('books.json', 'w+') as f:
-            f.write(json.dumps(mapping))
+        with json_db.connect('db.json') as db:
+            db['books'] = mapping
 
         await interaction.response.send_message(str(mapping))
 
@@ -30,8 +37,8 @@ class BookClub(nextcord.ext.commands.Cog):
     @nextcord.slash_command(description='Define chosen')
     async def define_chosen(self, interaction,
                    name=nextcord.SlashOption(description='Name', required=True)):
-        with open('chosen.txt', 'a+'):
-            f.write(name + '\n')
+        with json_db.connect('db.json') as db:
+            db['chosen'].append(name)
 
         await interaction.response.send_message(f'{name} is now excluded from this round')
 
@@ -39,8 +46,9 @@ class BookClub(nextcord.ext.commands.Cog):
     @nextcord.slash_command(description='Get books')
     async def get_books(self, interaction):
         books = ''
-        with open('books.json', 'r') as f:
-            books = f.read()
+
+        with json_db.connect('db.json') as db:
+            books = json.dumps(db['books'])
 
         await interaction.response.send_message(books)
 
@@ -48,8 +56,9 @@ class BookClub(nextcord.ext.commands.Cog):
     @nextcord.slash_command(description='Get chosen')
     async def get_chosen(self, interaction):
         chosen = ''
-        with open('chosen.txt', 'r') as f:
-            chosen = f.read()
+
+        with json_db.connect('db.json') as db:
+            chosen = json.dumps(db['chosen'])
 
         await interaction.response.send_message(chosen)
 
@@ -59,11 +68,9 @@ class BookClub(nextcord.ext.commands.Cog):
         collection = []
         chosen = []
 
-        with open('books.json', 'r') as f:
-            collection = json.loads(f.read()).items()
-
-        with open('chosen.txt', 'r') as f:
-            chosen = f.read().split('\n')
+        with json_db.connect('db.json') as db:
+            collection = db['books'].items()
+            chosen = db['chosen']
 
         chooseable = filter(lambda x: x[0] not in chosen, collection)
         flatten = lambda xss: [x for xs in xss for x in xs]
@@ -76,14 +83,12 @@ class BookClub(nextcord.ext.commands.Cog):
         new_collection = copy.deepcopy(dict(collection))
         new_collection[newly_chosen] = list(filter(lambda x: x != choice, dict(collection)[newly_chosen]))
 
-        if len(list(filter(bool, chosen))) + 1 >= len(list(map(lambda x: x[0], collection))):
-            with open('chosen.txt', 'w+') as f:
-                f.write('')
-        else:
-            with open('chosen.txt', 'a+') as f:
-                f.write(f'\n{newly_chosen}\n')
+        with json_db.connect('db.json') as db:
+            if len(db['chosen']) + 1 >= len(db['books'].keys()):
+                db['chosen'] = []
+            else:
+                db['chosen'].append(newly_chosen)
 
-        with open('books.json', 'w') as f:
-            f.write(json.dumps(new_collection))
+            db['books'] = new_collection
 
         await interaction.response.send_message(f'Livro escolhido: {choice}')
