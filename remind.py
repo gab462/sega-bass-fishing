@@ -152,5 +152,5 @@ class Remind(nextcord.ext.commands.Cog):
         await asyncio.gather(*[
             await_scheduled(event)
             for event in scheduled
-            if (now - datetime.datetime.fromisoformat(event['time'])).total_seconds() < 3600
+            if (datetime.datetime.fromisoformat(event['time']) - now).total_seconds() < 3600
         ])
